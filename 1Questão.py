@@ -28,6 +28,6 @@ while True:
     strURL += 'CotacaoMoedaPeriodo(moeda=@moeda,dataInicial='
     strURL += '@dataInicial,dataFinalCotacao=@dataFinalCotacao)?'
     strURL += f'@moeda=%27{moeda}%27&@dataInicial=%2701-01-{ano}%27&'
-    strURL += f'@dataFinalCotacao=%2712-31-{ano}%27&$top=100&$format=json'
+    strURL += f'@dataFinalCotacao=%2712-31-{ano}%27&$format=json'
     dictCotacoes = requests.get(strURL).json()
     print(dictCotacoes)
