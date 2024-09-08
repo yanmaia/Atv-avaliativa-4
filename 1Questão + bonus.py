@@ -90,7 +90,7 @@ while True:
         sys.exit(f"\nErro ao salvar o arquivo CSV: {e}")
 
     # questão bonus, gerando o grafico
-    meses = list(medias_calculadas.keys())
+    meses = sorted(medias_calculadas.keys())
     mediaCompra = [medias_calculadas[mes]['mediaCompra'] for mes in meses]
     mediaVenda = [medias_calculadas[mes]['mediaVenda'] for mes in meses]
 
