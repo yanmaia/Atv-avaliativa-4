@@ -90,18 +90,3 @@ while True:
         print("\nProcesso concluído com sucesso.")
     except IOError as e:
         sys.exit(f"\nerro ao  tentar salvar o arquivo CSV: {e}")
-
-    # questão bonus, gerando o grafico
-    messes = list(medias_calculadas.keys())
-    mediaCompra = [medias_calculadas[mes]['mediaCompra'] for mes in messes]
-    mediaVenda = [medias_calculadas[mes]['mediaVenda'] for mes in messes]
-
-    graf.figure(figsize=(10, 5))
-    graf.plot(messes, mediaCompra, label='Media Compra', color='blue', linestyle='-', marker='o', markersize=8)
-    graf.plot(messes, mediaVenda, label='Media Venda', color='red', linestyle='--', marker='s', markersize=8)
-    graf.title(f'Media Cotações {moeda} – Ano {ano}')
-    graf.xlabel('Mês')
-    graf.ylabel('Valor')
-    graf.legend()
-    graf.grid(True)
-    graf.show()
