@@ -1,4 +1,6 @@
 import requests, sys, datetime, json, os
+import matplotlib.pyplot as graf
+
 try:
     strURL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata'
     strURL += '/Moedas?$top=100&$format=json'
@@ -43,6 +45,8 @@ while True:
         sys.exit('\nErro nos valores digitados, siga as instruções do código.')
     except KeyError:
         sys.exit('\nA chave do dicionário relacionado às cotações não foi encontrada, verifique o código/URL ou contate um profissional.')
+    except KeyboardInterrupt:
+        sys.exit('\nSaindo....')
     except:   
         sys.exit(f'\nUm erro ocorreu. Informe este erro para o administrador: {sys.exc_info()[0]}')   
     else:
@@ -85,4 +89,19 @@ while True:
                 csv_file.write(f'{moeda};{mes};{medias_calculadas[mes]["mediaCompra"]};{medias_calculadas[mes]["mediaVenda"]}\n')
         print("\nProcesso concluído com sucesso.")
     except IOError as e:
-        sys.exit(f"\nErro ao salvar o arquivo CSV: {e}")
+        sys.exit(f"\nerro ao  tentar salvar o arquivo CSV: {e}")
+
+    # questão bonus, gerando o grafico
+    messes = list(medias_calculadas.keys())
+    mediaCompra = [medias_calculadas[mes]['mediaCompra'] for mes in messes]
+    mediaVenda = [medias_calculadas[mes]['mediaVenda'] for mes in messes]
+
+    graf.figure(figsize=(10, 5))
+    graf.plot(messes, mediaCompra, label='Media Compra', color='blue', linestyle='-', marker='o', markersize=8)
+    graf.plot(messes, mediaVenda, label='Media Venda', color='red', linestyle='--', marker='s', markersize=8)
+    graf.title(f'Media Cotações {moeda} – Ano {ano}')
+    graf.xlabel('Mês')
+    graf.ylabel('Valor')
+    graf.legend()
+    graf.grid(True)
+    graf.show()
