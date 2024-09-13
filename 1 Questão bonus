@@ -1,0 +1,107 @@
+import requests, sys, datetime, json, os
+import matplotlib.pyplot as graf
+
+try:
+    strURL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata'
+    strURL += '/Moedas?$top=100&$format=json'
+    dictMoedas = requests.get(strURL).json()
+    codigomoeda = [moeda['simbolo'] for moeda in dictMoedas['value']] 
+    nomemoeda = [nome['nomeFormatado'] for nome in dictMoedas['value']]
+    anoatual = datetime.date.today().year
+except requests.exceptions.RequestException:
+    sys.exit(f'\nUm erro ocorreu referente a requisição das Moedas disponíveis, verifique a URL da API, sua conexão de internet, ou contate um profissional informando este código de erro {sys.exc_info()[0]}')
+except KeyError:
+    sys.exit('\nA chave do dicionário relacionado às moedas não foi encontrada, verifique o código/URL ou contate um profissional.')
+except:   
+    sys.exit(f'\nUm erro ocorreu. Informe este erro para o administrador: {sys.exc_info()[0]}')   
+while True:
+    print(f"\n{'---'*10}Estas são todas as moedas disponíveis{'---'*10}")
+    for i in range(len(codigomoeda)):
+        print(f'|{codigomoeda[i]} - {nomemoeda[i]}')    
+    print('\nCaso queira sair, digite 0')
+    
+    try:   
+        moeda = (input('\nInforme a sigla da moeda a ser usada: ').upper())   
+        if moeda == '0': break
+        if moeda not in codigomoeda or len(moeda) > 3:
+            print('\nEssa moeda não é válida, use apenas as siglas das moedas disponíveis.')
+            continue
+        ano = int(input(f'\nInforme o ano desejado da consulta entre 1990 e {anoatual}: '))
+        if ano == 0: break
+        if ano > anoatual or ano < 1990:
+            print('\nO ano desejado não é válido, siga as instruções.')
+            continue
+
+        strURL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/'
+        strURL += 'CotacaoMoedaPeriodo(moeda=@moeda,dataInicial='
+        strURL += '@dataInicial,dataFinalCotacao=@dataFinalCotacao)?'
+        strURL += f'@moeda=%27{moeda}%27&@dataInicial=%2701-01-{ano}%27&'
+        strURL += f'@dataFinalCotacao=%2712-31-{ano}%27&$format=json'
+        dictCotacoes = requests.get(strURL).json()
+        
+    except requests.exceptions.RequestException:
+        sys.exit(f'Erro na requisição das cotações disponíveis. Verifique a URL, sua conexão, ou contate um profissional informando este erro: {sys.exc_info()[0]}')
+    except ValueError:
+        sys.exit('\nErro nos valores digitados, siga as instruções do código.')
+    except KeyError:
+        sys.exit('\nA chave do dicionário relacionado às cotações não foi encontrada, verifique o código/URL ou contate um profissional.')
+    except KeyboardInterrupt:
+        sys.exit('\nSaindo....')
+    except:   
+        sys.exit(f'\nUm erro ocorreu. Informe este erro para o administrador: {sys.exc_info()[0]}')   
+    else:
+        medias = {}
+        for cotacao in dictCotacoes['value']:
+            data = cotacao['dataHoraCotacao'].split('T')[0]
+            mes = data[5:7]
+            if mes not in medias:
+                medias[mes] = {'mediaCompra': [], 'mediaVenda': []}
+            if cotacao['cotacaoCompra'] is not None and cotacao['cotacaoVenda'] is not None:
+                medias[mes]['mediaCompra'].append(cotacao['cotacaoCompra'])
+                medias[mes]['mediaVenda'].append(cotacao['cotacaoVenda'])
+
+        medias_calculadas = {}
+        for mes in medias:
+            if medias[mes]['mediaCompra'] and medias[mes]['mediaVenda']:
+                mediaCompra = sum(medias[mes]['mediaCompra']) / len(medias[mes]['mediaCompra'])
+                mediaVenda = sum(medias[mes]['mediaVenda']) / len(medias[mes]['mediaVenda'])
+                medias_calculadas[mes] = {'mediaCompra': round(mediaCompra, 5), 'mediaVenda': round(mediaVenda, 5)}
+
+
+    nome_arquivo_json = f'medias_cotacoes_{moeda}_{ano}.json'        #salva json
+    nome_arquivo_csv = f'medias_cotacoes_{moeda}_{ano}.csv'         #Salva csv
+
+    if os.path.exists(nome_arquivo_json):
+        print(f"\nO arquivo {nome_arquivo_json} já existe e sera sobrescrito.")
+    if os.path.exists(nome_arquivo_csv):
+        print(f"\nO arquivo {nome_arquivo_csv} já existe e sera sobrescrito.")
+
+    try:
+        with open(nome_arquivo_json, 'w') as json_file:
+            json.dump(medias_calculadas, json_file, indent=4)
+    except IOError as e:
+        sys.exit(f"\nErro ao salvar o arquivo JSON: {e}")
+
+    try:
+        with open(nome_arquivo_csv, 'w') as csv_file:
+            csv_file.write('moeda;mes;mediaCompra;mediaVenda\n')
+            for mes in medias_calculadas:
+                csv_file.write(f'{moeda};{mes};{medias_calculadas[mes]["mediaCompra"]};{medias_calculadas[mes]["mediaVenda"]}\n')
+        print("\nProcesso concluído com sucesso.")
+    except IOError as e:
+        sys.exit(f"\nerro ao  tentar salvar o arquivo CSV: {e}")
+
+    # questão bonus, gerando o grafico
+    messes = list(medias_calculadas.keys())
+    mediaCompra = [medias_calculadas[mes]['mediaCompra'] for mes in messes]
+    mediaVenda = [medias_calculadas[mes]['mediaVenda'] for mes in messes]
+
+    graf.figure(figsize=(10, 5))
+    graf.plot(messes, mediaCompra, label='Media Compra', color='blue', linestyle='-', marker='o', markersize=8)
+    graf.plot(messes, mediaVenda, label='Media Venda', color='red', linestyle='--', marker='s', markersize=8)
+    graf.title(f'Media Cotações {moeda} – Ano {ano}')
+    graf.xlabel('Mês')
+    graf.ylabel('Valor')
+    graf.legend()
+    graf.grid(True)
+    graf.show()
