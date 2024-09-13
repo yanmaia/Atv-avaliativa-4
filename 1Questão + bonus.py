@@ -1,6 +1,4 @@
 import requests, sys, datetime, json, os
-import matplotlib.pyplot as graf
-
 try:
     strURL = 'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata'
     strURL += '/Moedas?$top=100&$format=json'
@@ -88,18 +86,3 @@ while True:
         print("\nProcesso concluído com sucesso.")
     except IOError as e:
         sys.exit(f"\nErro ao salvar o arquivo CSV: {e}")
-
-    # questão bonus, gerando o grafico
-    meses = sorted(medias_calculadas.keys())
-    mediaCompra = [medias_calculadas[mes]['mediaCompra'] for mes in meses]
-    mediaVenda = [medias_calculadas[mes]['mediaVenda'] for mes in meses]
-
-    graf.figure(figsize=(10, 5))
-    graf.plot(meses, mediaCompra, label='Média Compra', marker='o')
-    graf.plot(meses, mediaVenda, label='Média Venda', marker='o')
-    graf.title(f'Média Cotações {moeda} – Ano {ano}')
-    graf.xlabel('Mês')
-    graf.ylabel('Valor')
-    graf.legend()
-    graf.grid(True)
-    graf.show()
